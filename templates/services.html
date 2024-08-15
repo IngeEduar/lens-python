@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servicios de Kubernetes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .service-list {
+            margin: 20px 0;
+        }
+        .service-item {
+            cursor: pointer;
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        .service-item:hover {
+            background-color: #d0d0d0;
+        }
+        .port-forward-form, .active-port-forwards {
+            margin-top: 20px;
+        }
+        .active-port-forwards ul {
+            list-style: none;
+            padding: 0;
+        }
+        .active-port-forwards li {
+            padding: 10px;
+            background-color: #e0e0e0;
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+    </style>
+    <script>
+        function createPortForward() {
+            const serviceName = document.getElementById('service_name').value;
+            const namespace = document.getElementById('namespace').value;
+            const localPort = document.getElementById('local_port').value;
+            const targetPort = document.getElementById('target_port').value;
+
+            fetch('/create-port-forward', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `service_name=${serviceName}&namespace=${namespace}&local_port=${localPort}&target_port=${targetPort}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Port-forward creado exitosamente');
+                    location.reload();  // Recarga la página para mostrar los port-forwards activos
+                } else {
+                    alert(`Error: ${data.error}`);
+                }
+            });
+        }
+
+        function deletePortForward(pid) {
+            fetch('/delete-port-forward', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `pid=${pid}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Port-forward eliminado exitosamente');
+                    location.reload();  // Recarga la página para mostrar los port-forwards activos
+                } else {
+                    alert(`Error: ${data.error}`);
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>Lista de Servicios</h1>
+    <div class="service-list">
+        {% for service in services %}
+            <div class="service-item" onclick="document.getElementById('service_name').value='{{ service.name }}'; document.getElementById('namespace').value='{{ service.namespace }}'">
+                {{ service.name }} ({{ service.namespace }})
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="port-forward-form">
+        <h2>Crear Port-Forward</h2>
+        <form onsubmit="event.preventDefault(); createPortForward();">
+            <label for="service_name">Nombre del Servicio:</label><br>
+            <input type="text" id="service_name" name="service_name" readonly><br><br>
+
+            <label for="namespace">Namespace:</label><br>
+            <input type="text" id="namespace" name="namespace" readonly><br><br>
+
+            <label for="local_port">Puerto Local:</label><br>
+            <input type="text" id="local_port" name="local_port" required><br><br>
+
+            <label for="target_port">Puerto de Destino:</label><br>
+            <input type="text" id="target_port" name="target_port" required><br><br>
+
+            <button type="submit">Crear Port-Forward</button>
+        </form>
+    </div>
+
+    <div class="active-port-forwards">
+        <h2>Port-Forwards Activos</h2>
+        <ul>
+            {% for pf in active_port_forwards.values() %}
+                <li>
+                    Servicio: {{ pf.service_name }} (Namespace: {{ pf.namespace }})<br>
+                    Local: {{ pf.local_port }} &rarr; Destino: {{ pf.target_port }}<br>
+                    <button onclick="deletePortForward({{ pf.pid }})">Eliminar</button>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

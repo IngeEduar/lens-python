@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kubernetes Pods</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .pod-list {
+            margin: 20px 0;
+        }
+        .pod-item {
+            cursor: pointer;
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        .pod-item:hover {
+            background-color: #d0d0d0;
+        }
+        .pod-info {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+    </style>
+    <script>
+        function showPodInfo(podName, namespace) {
+            fetch(`/pod-info?name=${podName}&namespace=${namespace}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('pod-info').innerHTML = `<strong>Error:</strong> ${data.error}`;
+                    } else {
+                        let containerInfo = data.containers.map(c => `<li>${c.name}: ${c.image}</li>`).join('');
+                        document.getElementById('pod-info').innerHTML = `
+                            <strong>Nombre:</strong> ${data.name}<br>
+                            <strong>Namespace:</strong> ${data.namespace}<br>
+                            <strong>Nodo:</strong> ${data.node}<br>
+                            <strong>Estado:</strong> ${data.status}<br>
+                            <strong>IP del Pod:</strong> ${data.pod_ip}<br>
+                            <strong>Contenedores:</strong><ul>${containerInfo}</ul>
+                        `;
+                    }
+                });
+        }
+    </script>
+</head>
+<body>
+    <h1>Lista de Pods</h1>
+    <div class="pod-list">
+        {% for pod in pods %}
+            <div class="pod-item" onclick="showPodInfo('{{ pod.name }}', '{{ pod.namespace }}')">
+                {{ pod.name }} ({{ pod.namespace }})
+            </div>
+        {% endfor %}
+    </div>
+    <div id="pod-info" class="pod-info">
+        <strong>Selecciona un pod para ver su información.</strong>
+    </div>
+</body>
+</html>
